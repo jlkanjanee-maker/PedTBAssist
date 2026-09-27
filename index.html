@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pediatric TB Clinical Assistant — NTP 2564</title>
+<style>
+:root{--bg:#f4f7fb;--card:#fff;--ink:#172033;--muted:#667085;--line:#d9e1ec;--accent:#2563eb;--soft:#eff6ff;--warn:#fff7ed;--danger:#fff1f2}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Noto Sans Thai","Tahoma",sans-serif;background:var(--bg);color:var(--ink)}
+.wrap{max-width:920px;margin:auto;padding:24px}.head{margin-bottom:18px}.head h1{margin:0;font-size:25px}.sub{color:var(--muted);margin-top:5px;font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;margin:14px 0;box-shadow:0 4px 18px #1e293b0a}
+h2{font-size:20px;margin:0 0 14px}h3{font-size:16px;margin:18px 0 8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+button,.choice{border:1px solid var(--line);background:#fff;border-radius:12px;padding:13px 14px;font-size:15px;cursor:pointer;text-align:left}
+button:hover,.choice:hover{border-color:#93b4f5;background:#f8fbff}.primary{background:var(--accent);color:white;border-color:var(--accent);text-align:center;font-weight:700}
+.secondary{text-align:center}.selected{border-color:var(--accent);background:var(--soft);box-shadow:0 0 0 1px var(--accent) inset}
+label{display:block;font-size:13px;color:var(--muted);margin:10px 0 5px}input,select{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font-size:15px;background:white}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.note{padding:12px 14px;border-radius:12px;background:var(--soft);margin:10px 0}.warn{background:var(--warn)}.danger{background:var(--danger)}
+.hidden{display:none!important}.actions{display:flex;gap:10px;margin-top:18px}.actions button{flex:1}.summary{line-height:1.65}.summary b{color:#0f172a}.pill{display:inline-block;padding:4px 9px;border-radius:999px;background:var(--soft);font-size:12px;margin:2px}
+hr{border:0;border-top:1px solid var(--line);margin:16px 0}.small{font-size:13px;color:var(--muted)}ul{padding-left:22px;margin:7px 0}
+@media(max-width:600px){.wrap{padding:12px}.row{grid-template-columns:1fr}.head h1{font-size:21px}}
+</style></head>
+<body><div class="wrap">
+<div class="head"><h1>Pediatric TB Clinical Assistant</h1><div class="sub">อิง NTP Thailand 2564 • Calculator + Clinical reminder • ไม่บันทึกข้อมูลผู้ป่วย<br>
+Reference: <a href="https://www.thainapci.org/2021/wp-content/uploads/2021/11/%E0%B9%81%E0%B8%99%E0%B8%A7%E0%B8%97%E0%B8%B2%E0%B8%87%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%84%E0%B8%A7%E0%B8%9A%E0%B8%84%E0%B8%B8%E0%B8%A1%E0%B8%A7%E0%B8%B1%E0%B8%93%E0%B9%82%E0%B8%A3%E0%B8%84%E0%B8%9B%E0%B8%A3%E0%B8%B0%E0%B9%80%E0%B8%97%E0%B8%A8%E0%B9%84%E0%B8%97%E0%B8%A2-%E0%B8%9E.%E0%B8%A8.-2564.pdf" target="_blank" rel="noopener noreferrer">แนวทางการควบคุมวัณโรคประเทศไทย พ.ศ. 2564 (NTP 2021)</a></div></div>
+
+<div id="home" class="card">
+<h2>เลือก Clinical pathway</h2>
+<div class="grid">
+<button onclick="start('contact')">เด็กสัมผัส TB</button>
+
+<button onclick="start('active')">Confirmed TB</button>
+<button onclick="start('neo')">ทารกจากมารดา TB</button>
+</div></div>
+
+<div id="form" class="card hidden"></div>
+<div id="summary" class="card hidden"></div>
+</div>
+<script>
+let state={};
+const HMAX=300,RMAX=600,ZMAX=2000,EMAX=1200;
+function reset(){state={};show('home');hide('form');hide('summary')}
+function show(id){document.getElementById(id).classList.remove('hidden')}
+function hide(id){document.getElementById(id).classList.add('hidden')}
+function val(id){return document.getElementById(id)?.value||''}
+function start(p){state={path:p};hide('home');hide('summary');show('form');render()}
+function btn(label,key,value){return `<button class="choice ${state[key]===value?'selected':''}" onclick="state['${key}']='${value}';render()">${label}</button>`}
+function nav(summaryFn){return `<div class="actions"><button class="secondary" onclick="reset()">เริ่มใหม่</button><button class="primary" onclick="${summaryFn}">สรุปผล</button></div>`}
+function render(){
+ const f=document.getElementById('form');
+ if(state.path==='contact') f.innerHTML=contact();
+ if(state.path==='active') f.innerHTML=active();
+ if(state.path==='neo') f.innerHTML=neo();
+}
+function contact(){
+return `<h2>เด็กสัมผัส TB</h2>
+<div class="row"><div><label>อายุ (ปี)</label><input id="ageY" type="number" min="0" step="1" value="${state.ageY||''}" onchange="state.ageY=this.value;render()"></div><div><label>อายุ (เดือน)</label><input id="ageM" type="number" min="0" max="11" step="1" value="${state.ageM||''}" onchange="state.ageM=this.value;render()"></div></div>
+<div class="note small"><b>Close contact:</b> ≥8 ชม./วัน หรือ ≥120 ชม./เดือน; เด็กโดยเฉพาะ &lt;5 ปี อาจพิจารณาเป็น close contact แม้ระยะเวลาน้อยกว่านี้</div>
+<h3>ประเมิน Hx + PE และ CXR AP + lateral</h3>
+<div class="grid">${btn('CXR ปกติ','cxr','normal')}${btn('CXR ผิดปกติ','cxr','abnormal')}</div>
+${contactNext()}
+${nav('sumContact()')}`;
+}
+function contactNext(){
+ let a=ageYears();
+ if(state.cxr==='abnormal') return `<h3>ลักษณะ CXR</h3><div class="grid">${btn('Highly suspicious TB / miliary','susp','high')}${btn('ไม่ highly suspicious','susp','low')}</div>
+ ${state.susp==='high'?`<div class="danger note">→ Active TB evaluation</div>`:''}
+ ${state.susp==='low'?`<div class="note">→ Treat as CAP → F/U 1–2 สัปดาห์<br>ถ้าไม่ดีขึ้น → Evaluate TB</div>`:''}`;
+ if(state.cxr!=='normal') return '';
+ if(a<5) return `<div class="note"><b>อายุ &lt;5 ปี + ไม่สงสัย Active TB</b><br>→ ไม่ต้องทำ TST<br>→ พิจารณา TPT</div>${contactTptPanel()}`;
+ return `<h3>TST</h3><div class="note">นัดทำ TST วันจันทร์ → อ่านผลวันพฤหัสบดี</div>
+ <label>ผล TST: Induration (mm)</label><input id="contactMm" type="number" min="0" value="${state.contactMm||''}" onchange="state.contactMm=this.value;render()">
+ ${contactTstResult()}`;
+}
+function contactTstResult(){
+ if(state.contactMm===''||state.contactMm==null)return '';
+ let m=+state.contactMm;
+ if(m>=15)return `<div class="note"><b>TST ≥15 mm → TPT</b></div>${contactTptPanel()}`;
+ if(m>=10)return `<div class="warn note"><b>TST 10–14 mm → แพทย์พิจารณาตัดสินใจ</b></div>
+ <div class="grid">${btn('พิจารณาให้ TPT','contactDecision','tpt')}${btn('ยังไม่ให้ TPT','contactDecision','no')}</div>
+ ${state.contactDecision==='tpt'?contactTptPanel():''}`;
+ return `<div class="note"><b>TST &lt;10 mm → Follow / monitor</b></div>`;
+}
+function contactTptPanel(){
+ return `<hr><h3>TPT</h3>
+ <div class="warn note">ต้อง exclude Active TB ก่อนเริ่ม TPT และตรวจผลดื้อยาของ source case / drug interaction โดยเฉพาะ rifampicin</div>
+ <label>ผลดื้อยาของ source case</label><div class="grid">${btn('ไม่พบ H/R resistance','contactRes','sus')}${btn('RR/MDR','contactRes','rr')}${btn('ยังไม่ทราบ','contactRes','unk')}</div>
+ ${state.contactRes==='sus'?`<label>Regimen</label><div class="grid">${btn('3HR','contactReg','3HR')}${btn('4R','contactReg','4R')}${btn('6–9H','contactReg','H')}</div>
+ <label>น้ำหนัก (kg)</label><input id="contactWt" type="number" min="0" step=".1" value="${state.contactWt||''}" onchange="state.contactWt=this.value;render()">
+ ${contactDosePreview()}`:''}
+ ${state.contactRes==='rr'?`<div class="danger note">RR/MDR → ไม่ใช้ standard H/R TPT calculator; DR-TB pathway / ปรึกษาผู้เชี่ยวชาญ</div>`:''}
+ ${state.contactRes==='unk'?`<div class="warn note"><b>ยังไม่ทราบผลดื้อยาของ index case</b><br>ไม่ต้องรอผล DST → เริ่ม TPT regimen ที่แนะนำไปก่อนได้ และทบทวน/ปรับเมื่อทราบผล</div>
+ <label>Regimen</label><div class="grid">${btn('3HR — แนะนำ','contactReg','3HR')}${btn('4R','contactReg','4R')}${btn('6–9H','contactReg','H')}</div>
+ <label>น้ำหนัก (kg)</label><input id="contactWt" type="number" min="0" step=".1" value="${state.contactWt||''}" onchange="state.contactWt=this.value;render()">
+ ${contactDosePreview()}`:''}`;
+}
+function contactDosePreview(){
+ let w=+state.contactWt||0,a=ageYears();if(!w||!state.contactReg)return '';
+ if(state.contactReg==='3HR'){let h=a<10?10:5,r=a<10?15:10;return `<div class="note"><b>3HR × 3 เดือน</b><br>H ${dose(w*h,HMAX).toFixed(0)} mg/day<br>R ${dose(w*r,RMAX).toFixed(0)} mg/day</div>`}
+ if(state.contactReg==='4R'){let r=a<10?15:10;return `<div class="note"><b>4R × 4 เดือน</b><br>R ${dose(w*r,RMAX).toFixed(0)} mg/day</div>`}
+ let h=a<10?10:5;return `<div class="note"><b>6–9H</b><br>H ${dose(w*h,HMAX).toFixed(0)} mg/day</div>`;
+}
+function tst(){
+return `<h2>นัดฟังผล TST</h2>
+<div class="row"><div><div class="row"><div><label>อายุ (ปี)</label><input id="ageY" type="number" min="0" step="1" value="${state.ageY||''}" onchange="state.ageY=this.value"></div><div><label>อายุ (เดือน)</label><input id="ageM" type="number" min="0" max="11" step="1" value="${state.ageM||''}" onchange="state.ageM=this.value"></div></div></div>
+<div><label>Induration (mm)</label><input id="mm" type="number" min="0" value="${state.mm||''}" onchange="state.mm=this.value"></div></div>
+<label>HIV</label><div class="grid">${btn('Positive','hiv','pos')}${btn('Negative','hiv','neg')}${btn('Unknown','hiv','unk')}</div>
+${tstTptPanel()}
+${nav('sumTst()')}`;
+}
+function ageYears(){return (+state.ageY||0)+(+state.ageM||0)/12}
+function ageText(){return `${state.ageY||0} ปี ${state.ageM||0} เดือน`}
+function tstEligible(){
+ let a=ageYears(),m=+state.mm||0;
+ return state.hiv==='pos' || a<5 || (a>=5 && a<=18 && m>=15);
+}
+function tstTptPanel(){
+ if(!tstEligible()) return '';
+ return `<hr><h3>พิจารณา TPT</h3>
+ <div class="warn note">ต้อง exclude Active TB ก่อนเริ่ม TPT และตรวจผลดื้อยาของ source case / drug interaction โดยเฉพาะ rifampicin</div>
+ <label>ยืนยัน exclude Active TB</label><div class="grid">${btn('✓ Active TB excluded','tstExcluded','yes')}${btn('ยังไม่ได้ exclude','tstExcluded','no')}</div>
+ ${state.tstExcluded==='yes'?`<label>ผลดื้อยาของ source case</label><div class="grid">${btn('ไม่พบ H/R resistance','tstRes','sus')}${btn('RR/MDR','tstRes','rr')}${btn('ยังไม่ทราบ','tstRes','unk')}</div>`:''}
+ ${state.tstRes==='sus'?`<label>Regimen</label><div class="grid">${btn('3HR','tstReg','3HR')}${btn('4R','tstReg','4R')}${btn('6–9H','tstReg','H')}</div>
+ <label>น้ำหนัก (kg)</label><input id="tstWt" type="number" min="0" step=".1" value="${state.tstWt||''}" onchange="state.tstWt=this.value;render()">
+ ${tstDosePreview()}`:''}
+ ${state.tstRes==='rr'?`<div class="danger note">RR/MDR → ไม่ใช้ standard H/R TPT calculator; DR-TB pathway / ปรึกษาผู้เชี่ยวชาญ</div>`:''}
+ ${state.tstRes==='unk'?`<div class="warn note">ทบทวน Drug Susceptibility Testing (DST) ของ source case ก่อนเลือก preventive regimen</div>`:''}`;
+}
+function tstDosePreview(){
+ let w=+state.tstWt||0,a=ageYears(); if(!w||!state.tstReg)return '';
+ if(state.tstReg==='3HR'){let h=a<10?10:5,r=a<10?15:10;return `<div class="note"><b>3HR × 3 เดือน</b><br>H ${dose(w*h,HMAX).toFixed(0)} mg/day<br>R ${dose(w*r,RMAX).toFixed(0)} mg/day</div>`}
+ if(state.tstReg==='4R'){let r=a<10?15:10;return `<div class="note"><b>4R × 4 เดือน</b><br>R ${dose(w*r,RMAX).toFixed(0)} mg/day</div>`}
+ let h=a<10?10:5;return `<div class="note"><b>6–9H</b><br>H ${dose(w*h,HMAX).toFixed(0)} mg/day</div>`;
+}
+function tpt(){
+return `<h2>LTBI / TPT</h2>
+<label>ยืนยันว่าได้ exclude Active TB แล้ว</label><div class="grid">${btn('✓ Active TB excluded','excluded','yes')}${btn('ยังไม่ได้ exclude','excluded','no')}</div>
+${state.excluded==='yes'?`
+<div class="warn note">ก่อนเลือกสูตรยา: ตรวจผลดื้อยาของ source case และ drug interaction โดยเฉพาะ rifampicin</div>
+<label>ผลดื้อยาของ source case</label><div class="grid">${btn('ไม่พบ H/R resistance','res','sus')}${btn('RR/MDR','res','rr')}${btn('ยังไม่ทราบ','res','unk')}</div>
+${state.res==='sus'?`<label>Regimen</label><div class="grid">${btn('3HR','reg','3HR')}${btn('4R','reg','4R')}${btn('6–9H','reg','H')}</div>
+<div class="row"><div><div class="row"><div><label>อายุ (ปี)</label><input id="ageY" type="number" min="0" step="1" value="${state.ageY||''}" onchange="state.ageY=this.value"></div><div><label>อายุ (เดือน)</label><input id="ageM" type="number" min="0" max="11" step="1" value="${state.ageM||''}" onchange="state.ageM=this.value"></div></div></div>
+<div><label>น้ำหนัก (kg)</label><input id="wt" type="number" min="0" step=".1" value="${state.wt||''}" onchange="state.wt=this.value"></div></div>`:''}
+${state.res==='rr'?`<div class="danger note">RR/MDR → ไม่ใช้ standard H/R TPT calculator; เข้าสู่ DR-TB pathway / ปรึกษาผู้เชี่ยวชาญ</div>`:''}
+${state.res==='unk'?`<div class="warn note">ตรวจ/ทบทวนผล Drug Susceptibility Testing (DST) ของ source case ก่อนเลือก preventive regimen</div>`:''}
+`:''}
+${nav('sumTpt()')}`;
+}
+function active(){
+return `<h2>Confirmed TB</h2>
+<label>Drug susceptibility</label><div class="grid">${btn('Drug susceptible','res','sus')}${btn('RR/MDR','res','rr')}${btn('Pending / Unknown','res','unk')}</div>
+${state.res==='sus'?`<label>ตำแหน่งโรค</label><div class="grid">
+${btn('Pulmonary TB','site','pulm')}${btn('Lymph node TB','site','ln')}${btn('TB meningitis / CNS','site','cns')}${btn('Bone / Joint / Spine','site','bone')}${btn('Miliary / Disseminated','site','mil')}${btn('Other extrapulmonary','site','other')}</div>
+<div class="row"><div><label>น้ำหนัก (kg)</label><input id="wt" type="number" min="0" step=".1" value="${state.wt||''}" oninput="state.wt=this.value;render()"></div>
+<div><label>วันที่เริ่มยา</label><input id="startdate" type="date" value="${state.startdate||''}" onchange="state.startdate=this.value;render()"></div></div>
+${activeDosePreview()}`:''}
+${state.res==='rr'?`<div class="danger note">RR/MDR → DR-TB pathway / ปรึกษาผู้เชี่ยวชาญ</div>`:''}
+${state.res==='unk'?`<div class="warn note">ทบทวน Xpert / Drug Susceptibility Testing ก่อนใช้ drug-susceptible regimen</div>`:''}
+${nav('sumActive()')}`;
+}
+function neo(){
+return `<h2>ทารกจากมารดา TB</h2>
+<h3>1. แม่ยังอยู่ในระยะแพร่เชื้อหรือไม่?</h3>
+<div class="small">2 สัปดาห์แรกของการรักษา หรือเสมหะยัง positive</div>
+<div class="grid">${btn('ยังแพร่เชื้อ','infectious','yes')}${btn('พ้นระยะแพร่เชื้อ','infectious','no')}</div>
+${state.infectious==='yes'?`<div class="danger note"><b>แยกแม่–ลูกชั่วคราว</b><br>การให้นม: <b>งด BF แต่ BM ได้</b></div>`:''}
+${state.infectious==='no'?`<div class="note"><b>ไม่ต้องแยกแม่–ลูก</b><br>BF ได้ตามปกติ</div>`:''}
+<h3>2. มารดาได้รับการรักษาอย่างเหมาะสมและตอบสนองดี ≥3 เดือน?</h3>
+<div class="grid">${btn('ใช่','mom3','yes')}${btn('ไม่ใช่','mom3','no')}</div>
+${state.mom3==='yes'?`<label>CXR ทารก</label><div class="grid">${btn('ปกติ','neocxr','normal')}${btn('ผิดปกติ','neocxr','abnormal')}</div>
+${state.neocxr==='normal'?`<div class="note"><b>Routine newborn care</b><br>→ ฉีด BCG ได้ตามปกติ</div>`:''}
+${state.neocxr==='abnormal'?neoEval():''}`:''}
+${state.mom3==='no'?neoEval():''}
+${nav('sumNeo()')}`;
+}
+function neoEval(){
+return `<div class="note"><b>Evaluate neonatal TB</b><ul>
+<li>Hx + PE อย่างละเอียด</li><li>CXR</li>
+<li>Gastric content / ETT aspirate (ถ้าใส่ ETT): AFB stain + mycobacterial culture × 3 วัน</li>
+<li>พิจารณา LP ส่ง CSF: Cell count, Cell diff, Protein, Sugar, Culture for bacteria and for TB, PCR for TB</li>
+<li>Liver function test</li><li>± Blood for mycobacterial C/S</li></ul></div>
+<label>มีหลักฐาน / สงสัย neonatal TB?</label><div class="grid">${btn('ใช่','neotb','yes')}${btn('ไม่มีหลักฐาน TB','neotb','no')}</div>
+${state.neotb==='yes'?`<div class="danger note">→ ให้ยาต้านวัณโรคทันที ควรเริ่มรักษาก่อนผลตรวจยืนยัน</div>
+<label>น้ำหนักทารก (kg)</label><input id="neoTxWt" type="number" min="0" step=".01" value="${state.neoTxWt||''}" oninput="state.neoTxWt=this.value;render()">
+${neoTreatmentDose()}`:''}
+${state.neotb==='no'?`<div class="note">→ BCG → เริ่ม preventive drug หลัง BCG 3–7 วัน</div>
+<label>ผล Drug Susceptibility Testing (DST) ของมารดา</label>
+<div class="grid">${btn('ไม่พบ H/R resistance','momres','sus')}${btn('H-resistant / R-sensitive','momres','hr')}${btn('H + R resistant','momres','mdr')}</div>
+${state.momres==='sus'?`<label>น้ำหนักทารก (kg)</label><input id="wt" type="number" min="0" step=".01" value="${state.wt||''}" oninput="state.wt=this.value;render()">${neoPreventiveDose('H')}`:''}
+${state.momres==='hr'?`<label>น้ำหนักทารก (kg)</label><input id="wt" type="number" min="0" step=".01" value="${state.wt||''}" oninput="state.wt=this.value;render()">${neoPreventiveDose('R')}`:''}
+${state.momres==='mdr'?`<div class="warn note">NTP 2564: ไม่แนะนำ preventive drug ในทารก</div>`:''}`:''}`;
+}
+function activeDosePreview(){
+ let w=+state.wt||0;
+ if(!state.site)return '';
+ let reg=(state.site==='pulm'||state.site==='ln')?'2HRZE/4HR':
+         (state.site==='cns'||state.site==='bone')?'2HRZE/10HR':
+         state.site==='mil'?'ประเมิน CNS; ถ้ามี CNS involvement → 2HRZE/10HR':
+         'พิจารณาสูตรตามตำแหน่งโรค / NTP';
+ let siteNote=state.site==='mil'?`<div class="warn note">Miliary / Disseminated TB: ประเมิน CNS involvement เพื่อกำหนดระยะเวลารักษา</div>`:'';
+ if(!w)return `<div class="note"><b>Regimen: ${reg}</b><br>ใส่น้ำหนักเพื่อคำนวณขนาดยา</div>${siteNote}`;
+ let doses=`<div class="note"><b>Regimen: ${reg}</b><br><br>
+ <b>ขนาดยาต่อวันตามน้ำหนัก ${w} kg</b><br>
+ H ${dose(w*10,HMAX).toFixed(0)} mg/day <span class="small">(10 mg/kg/day; max 300 mg)</span><br>
+ R ${dose(w*15,RMAX).toFixed(0)} mg/day <span class="small">(15 mg/kg/day; max 600 mg)</span><br>
+ Z ${dose(w*35,ZMAX).toFixed(0)} mg/day <span class="small">(35 mg/kg/day; max 2,000 mg)</span><br>
+ E ${dose(w*20,EMAX).toFixed(0)} mg/day <span class="small">(20 mg/kg/day; max 1,200 mg)</span>`;
+ if(state.site==='pulm'&&state.startdate){
+   doses+=`<hr><b>CXR</b><br>${dateAddMonths(state.startdate,2)} — 2 เดือน<br>${dateAddMonths(state.startdate,6)} — สิ้นสุดการรักษา`;
+ }
+ doses+=`</div>`;
+ return doses+siteNote;
+}
+function neoTreatmentDose(){
+ let w=+state.neoTxWt||0;
+ if(!w)return `<div class="note"><b>สูตรยา: 2HRZE/4HR</b><br>ใส่น้ำหนักเพื่อคำนวณขนาดยา</div>`;
+ return `<div class="note"><b>สูตรยา: 2HRZE/4HR</b><br>
+ <b>Intensive phase 2 เดือน</b><br>
+ H ${dose(w*10,HMAX).toFixed(0)} mg/day <span class="small">(10 mg/kg/day; max 300 mg)</span><br>
+ R ${dose(w*15,RMAX).toFixed(0)} mg/day <span class="small">(15 mg/kg/day; max 600 mg)</span><br>
+ Z ${dose(w*35,ZMAX).toFixed(0)} mg/day <span class="small">(35 mg/kg/day; max 2,000 mg)</span><br>
+ E ${dose(w*20,EMAX).toFixed(0)} mg/day <span class="small">(20 mg/kg/day; max 1,200 mg)</span><br><br>
+ <b>Continuation phase 4 เดือน</b><br>
+ H ${dose(w*10,HMAX).toFixed(0)} mg/day<br>
+ R ${dose(w*15,RMAX).toFixed(0)} mg/day
+ </div>`;
+}
+function neoPreventiveDose(drug){
+ let w=+state.wt||0;
+ if(drug==='H'){
+   if(!w)return `<div class="note">H 10 mg/kg/day × 9 เดือน<br>ใส่น้ำหนักเพื่อคำนวณ mg/day<br>พิจารณา pyridoxine 1–2 mg/day</div>`;
+   return `<div class="note"><b>H ${dose(w*10,HMAX).toFixed(0)} mg/day</b><br>10 mg/kg/day × 9 เดือน<br>พิจารณา pyridoxine 1–2 mg/day</div>`;
+ }
+ if(!w)return `<div class="note">R 10–20 mg/kg/day × 4 เดือน<br>ใส่น้ำหนักเพื่อคำนวณช่วงขนาดยา</div>`;
+ return `<div class="note"><b>R ${Math.round(w*10)}–${Math.min(Math.round(w*20),RMAX)} mg/day</b><br>10–20 mg/kg/day × 4 เดือน</div>`;
+}
+function dateAddMonths(s,m){if(!s)return '';let d=new Date(s+'T00:00:00');let day=d.getDate();d.setMonth(d.getMonth()+m);if(d.getDate()!=day)d.setDate(0);return d.toLocaleDateString('th-TH')}
+function dose(x,max){return Math.min(x,max)}
+function summary(title,body){hide('form');let s=document.getElementById('summary');s.innerHTML=`<h2>TB SUMMARY</h2><div class="summary"><b>${title}</b><hr>${body}</div><div class="actions"><button onclick="hide('summary');show('form')">แก้ไขข้อมูล</button><button class="primary" onclick="reset()">เริ่มใหม่</button></div>`;show('summary')}
+function syncAge(){state.ageY=val('ageY')||state.ageY||0;state.ageM=val('ageM')||state.ageM||0}
+function sumContact(){
+ syncAge();state.contactMm=val('contactMm')||state.contactMm;state.contactWt=val('contactWt')||state.contactWt;
+ let a=ageYears(),body=`อายุ: ${ageText()}<br>`;
+ if(state.cxr==='abnormal'){
+   body+=state.susp==='high'?'<b>Next action:</b> Active TB evaluation':state.susp==='low'?'<b>Next action:</b> Treat as CAP → F/U 1–2 สัปดาห์; ถ้าไม่ดีขึ้น Evaluate TB':'กรอกลักษณะ CXR ให้ครบ';
+   return summary('เด็กสัมผัส TB',body);
+ }
+ if(state.cxr!=='normal')return summary('เด็กสัมผัส TB',body+'กรอก CXR ให้ครบ');
+ if(a>=5){
+   let m=+state.contactMm;
+   body+=`CXR normal<br>TST: ${state.contactMm||'-'} mm<br>`;
+   if(state.contactMm===''||state.contactMm==null)return summary('เด็กสัมผัส TB',body+'นัด TST วันจันทร์ → อ่านผลวันพฤหัสบดี');
+   if(m<10)return summary('เด็กสัมผัส TB',body+'<b>ผล:</b> TST <10 mm → Follow / monitor');
+   if(m<15 && state.contactDecision!=='tpt')return summary('เด็กสัมผัส TB',body+'<b>ผล:</b> TST 10–14 mm → แพทย์พิจารณาตัดสินใจ');
+ } else body+='CXR normal<br><b>อายุ <5 ปี → ไม่ต้อง TST → พิจารณา TPT</b><br>';
+ if(state.contactRes!=='sus')return summary('เด็กสัมผัส TB',body+(state.contactRes==='rr'?'RR/MDR → DR-TB pathway / consult':'ทบทวนผลดื้อยาของ source case'));
+ let w=+state.contactWt,tx='';
+ if(state.contactReg==='3HR'){let h=a<10?10:5,r=a<10?15:10;tx=`3HR × 3 เดือน<br>H ${dose(w*h,HMAX).toFixed(0)} mg/day<br>R ${dose(w*r,RMAX).toFixed(0)} mg/day`;}
+ if(state.contactReg==='4R'){let r=a<10?15:10;tx=`4R × 4 เดือน<br>R ${dose(w*r,RMAX).toFixed(0)} mg/day`;}
+ if(state.contactReg==='H'){let h=a<10?10:5;tx=`6–9H<br>H ${dose(w*h,HMAX).toFixed(0)} mg/day`;}
+ summary('เด็กสัมผัส TB',body+`<hr><b>TPT</b><br>น้ำหนัก ${state.contactWt||'-'} kg<br>${tx||'ยังไม่ได้เลือก regimen'}`);
+}
+function sumTst(){
+ syncAge();state.mm=val('mm')||state.mm;state.tstWt=val('tstWt')||state.tstWt;
+ let a=ageYears(),m=+state.mm,r='';
+ if(state.hiv==='pos')r='หลัง exclude Active TB → พิจารณา TPT';
+ else if(a<5)r='อายุ <5 ปี: หลัง exclude Active TB → พิจารณา TPT โดยไม่ต้องอาศัย TST';
+ else if(a>=5&&a<=18){r=m>=15?'TST ≥15 mm → TPT':m>=10?'TST 10–14 mm → แพทย์พิจารณาเป็นรายกรณี':'TST <10 mm → Follow / monitor'}
+ else r='ตรวจข้อมูลอายุ';
+ let tx='';
+ if(tstEligible() && state.tstExcluded==='yes' && state.tstRes==='sus' && state.tstReg && +state.tstWt){
+   let w=+state.tstWt;
+   if(state.tstReg==='3HR'){let h=a<10?10:5,rr=a<10?15:10;tx=`<hr><b>TPT: 3HR × 3 เดือน</b><br>น้ำหนัก ${w} kg<br>H ${dose(w*h,HMAX).toFixed(0)} mg/day<br>R ${dose(w*rr,RMAX).toFixed(0)} mg/day`;}
+   if(state.tstReg==='4R'){let rr=a<10?15:10;tx=`<hr><b>TPT: 4R × 4 เดือน</b><br>น้ำหนัก ${w} kg<br>R ${dose(w*rr,RMAX).toFixed(0)} mg/day`;}
+   if(state.tstReg==='H'){let h=a<10?10:5;tx=`<hr><b>TPT: 6–9H</b><br>น้ำหนัก ${w} kg<br>H ${dose(w*h,HMAX).toFixed(0)} mg/day`;}
+ }
+ summary('TST Result',`อายุ ${ageText()} • Induration ${state.mm||'-'} mm<br>HIV: ${state.hiv||'-'}<hr><b>ผล:</b> ${r}${tx}`)
+}
+function sumTpt(){syncAge();state.wt=val('wt')||state.wt;if(state.excluded!=='yes')return summary('LTBI / TPT','ยังไม่ได้ยืนยัน exclude Active TB');if(state.res!=='sus')return summary('LTBI / TPT',state.res==='rr'?'RR/MDR → DR-TB pathway / consult':'ยังไม่ทราบผลดื้อยา source case');let a=ageYears(),w=+state.wt,lines='';if(state.reg==='3HR'){let h=a<10?10:5,r=a<10?15:10;lines=`3HR × 3 เดือน<br>H ${dose(w*h,HMAX).toFixed(0)} mg/day<br>R ${dose(w*r,RMAX).toFixed(0)} mg/day`;}if(state.reg==='4R'){let r=a<10?15:10;lines=`4R × 4 เดือน<br>R ${dose(w*r,RMAX).toFixed(0)} mg/day`;}if(state.reg==='H'){let h=a<10?10:5;lines=`6–9H<br>H ${dose(w*h,HMAX).toFixed(0)} mg/day`;}summary('LTBI / TPT',`✓ Active TB excluded<br>อายุ ${ageText()} • น้ำหนัก ${state.wt||'-'} kg<hr>${lines||'ยังไม่ได้เลือก regimen'}<hr><b>CXR:</b> Baseline เพื่อ exclude Active TB; ไม่ต้อง F/U CXR routine`)}
+function sumActive(){state.wt=val('wt')||state.wt;state.startdate=val('startdate')||state.startdate;if(state.res!=='sus')return summary('Confirmed TB',state.res==='rr'?'RR/MDR → DR-TB pathway / consult':'Pending/Unknown → ทบทวน Xpert / DST');let w=+state.wt;let reg=state.site==='pulm'||state.site==='ln'?'2HRZE/4HR':state.site==='cns'||state.site==='bone'?'2HRZE/10HR':state.site==='mil'?'ประเมิน CNS; ถ้า CNS involvement → 2HRZE/10HR':'พิจารณาตามตำแหน่งโรค/แนวทาง NTP';let site={pulm:'Pulmonary TB',ln:'Lymph node TB',cns:'TB meningitis / CNS TB',bone:'Bone / Joint / Spine TB',mil:'Miliary / Disseminated TB',other:'Other extrapulmonary'}[state.site]||'-';let doses=`H ${dose(w*10,HMAX).toFixed(0)} mg/day<br>R ${dose(w*15,RMAX).toFixed(0)} mg/day<br>Z ${dose(w*35,ZMAX).toFixed(0)} mg/day<br>E ${dose(w*20,EMAX).toFixed(0)} mg/day`;let cxr=state.site==='pulm'&&state.startdate?`<hr><b>CXR follow-up</b><br>${dateAddMonths(state.startdate,2)} — 2 เดือน<br>${dateAddMonths(state.startdate,6)} — สิ้นสุดการรักษา`:'';let lab=`<hr><b>Baseline LFT/Renal:</b> เมื่อมี risk factor / underlying disease<br><b>ตรวจ LFT หากมี:</b> เบื่ออาหาร, คลื่นไส้/อาเจียน, ปวดท้อง/RUQ, อ่อนเพลียผิดปกติ, ตัว/ตาเหลือง, ปัสสาวะสีเข้ม`;summary(site,`Regimen: <b>${reg}</b><br>น้ำหนัก ${state.wt||'-'} kg<hr>${doses}${cxr}${lab}`)}
+function sumNeo(){
+ state.wt=val('wt')||state.wt;
+ state.neoTxWt=val('neoTxWt')||state.neoTxWt;
+ let parts=[];
+
+ // 1 infectiousness / separation / feeding
+ parts.push(`<h3>แม่ยังอยู่ในระยะแพร่เชื้อหรือไม่?</h3>`);
+ if(state.infectious==='yes'){
+   parts.push(`<b>ยังอยู่ในระยะแพร่เชื้อ</b>
+   <h3>การแยกแม่–ลูก</h3><b>แยกแม่–ลูกชั่วคราว</b>
+   <h3>การให้นม</h3><b>งด BF แต่ BM ได้</b>`);
+ } else if(state.infectious==='no'){
+   parts.push(`<b>พ้นระยะแพร่เชื้อ</b>
+   <h3>การแยกแม่–ลูก</h3><b>ไม่ต้องแยกแม่–ลูก</b>
+   <h3>การให้นม</h3><b>BF ได้ตามปกติ</b>`);
+ } else parts.push(`-`);
+
+ // 2 maternal treatment
+ parts.push(`<hr><h3>มารดาได้รับการรักษาอย่างเหมาะสมและตอบสนองดี ≥3 เดือน?</h3>`);
+ if(state.mom3==='yes'){
+   parts.push(`<b>ใช่ — ≥3 เดือน</b>`);
+   if(state.neocxr==='normal'){
+     parts.push(`<h3>CXR ทารก</h3><b>ปกติ</b>
+     <h3>Management</h3><b>Routine newborn care + BCG ได้ตามปกติ</b>`);
+   } else if(state.neocxr==='abnormal'){
+     parts.push(`<h3>CXR ทารก</h3><b>ผิดปกติ</b>`);
+   }
+ } else if(state.mom3==='no'){
+   parts.push(`<b>ไม่ใช่ — &lt;3 เดือน / ยังไม่ได้รับการรักษาอย่างเหมาะสมหรือยังตอบสนองไม่ดี</b>`);
+ }
+
+ // 3 neonatal evaluation
+ if(state.mom3==='no' || (state.mom3==='yes' && state.neocxr==='abnormal')){
+   parts.push(`<hr><h3>Evaluate neonatal TB</h3>
+   <ul>
+   <li>Hx + PE อย่างละเอียด</li>
+   <li>CXR</li>
+   <li>Gastric content / ETT aspirate (ถ้าใส่ ETT): AFB stain + mycobacterial culture × 3 วัน</li>
+   <li>พิจารณา LP ส่ง CSF: Cell count, Cell diff, Protein, Sugar, Culture for bacteria and for TB, PCR for TB</li>
+   <li>Liver function test</li>
+   <li>± Blood for mycobacterial C/S</li>
+   </ul>`);
+
+   parts.push(`<h3>มีหลักฐาน / สงสัย neonatal TB?</h3>`);
+   if(state.neotb==='yes'){
+     parts.push(`<b>มีหลักฐาน / สงสัย neonatal TB</b>
+     <h3>Management</h3><b>ให้ยาต้านวัณโรคทันที ควรเริ่มรักษาก่อนผลตรวจยืนยัน</b>`);
+     let w=+state.neoTxWt||0;
+     if(w){
+       parts.push(`<h3>สูตรยา</h3><b>2HRZE/4HR</b><br>น้ำหนัก ${w} kg
+       <h3>ขนาดยา</h3>
+       H ${dose(w*10,HMAX).toFixed(0)} mg/day<br>
+       R ${dose(w*15,RMAX).toFixed(0)} mg/day<br>
+       Z ${dose(w*35,ZMAX).toFixed(0)} mg/day<br>
+       E ${dose(w*20,EMAX).toFixed(0)} mg/day`);
+     }
+   } else if(state.neotb==='no'){
+     parts.push(`<b>ไม่มีหลักฐาน TB</b>
+     <h3>Management</h3>BCG → เริ่ม preventive drug หลัง BCG 3–7 วัน`);
+
+     parts.push(`<h3>ผล Drug Susceptibility Testing (DST) ของมารดา</h3>`);
+     if(state.momres==='sus'){
+       parts.push(`<b>ไม่พบ H/R resistance</b>`);
+       if(state.wt){
+         parts.push(`<h3>Preventive treatment</h3><b>H ${dose(+state.wt*10,HMAX).toFixed(0)} mg/day × 9 เดือน</b><br>
+         น้ำหนัก ${state.wt} kg<br>พิจารณา pyridoxine 1–2 mg/day`);
+       } else {
+         parts.push(`<h3>Preventive treatment</h3><b>H 10 mg/kg/day × 9 เดือน</b><br>พิจารณา pyridoxine 1–2 mg/day`);
+       }
+     } else if(state.momres==='hr'){
+       parts.push(`<b>H-resistant / R-sensitive</b>`);
+       if(state.wt){
+         parts.push(`<h3>Preventive treatment</h3><b>R ${Math.round(+state.wt*10)}–${Math.min(Math.round(+state.wt*20),RMAX)} mg/day × 4 เดือน</b><br>น้ำหนัก ${state.wt} kg`);
+       } else {
+         parts.push(`<h3>Preventive treatment</h3><b>R 10–20 mg/kg/day × 4 เดือน</b>`);
+       }
+     } else if(state.momres==='mdr'){
+       parts.push(`<b>H + R resistant</b>
+       <h3>Preventive treatment</h3><b>NTP 2564 ไม่แนะนำ preventive drug ในทารก</b>`);
+     } else {
+       parts.push(`ยังไม่ได้ระบุผล DST`);
+     }
+   } else {
+     parts.push(`ยังไม่ได้ระบุ`);
+   }
+ }
+
+ summary('ทารกจากมารดา TB',parts.join(''));
+}
+</script></body></html>
